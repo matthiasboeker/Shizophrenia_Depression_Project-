@@ -8,13 +8,13 @@
 3. Implement basic models
 
 ## Explorative Analysis 
-1. Extract the daily(24h/12h) and nightly structure 
-2. Visualize autocorrelation, seasonality, distributions 
-3. Calculate statistical features
-    a. Mean 
-    b. Standard deviation
-    c. Zero proportion
-    d. Daily, nightly difference: measure DTW and/or cosine similiarity
+* Extract the daily(24h/12h) and nightly structure 
+* Visualize autocorrelation, seasonality, distributions 
+* Calculate statistical features
+    * Mean 
+    * Standard deviation
+    * Zero proportion
+    * Daily, nightly difference: measure DTW and/or cosine similiarity
 
 ## Papers
 1. https://dl.acm.org/doi/pdf/10.1145/3204949.3208125
