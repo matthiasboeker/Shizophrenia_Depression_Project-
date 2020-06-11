@@ -1,20 +1,27 @@
 
-# Time series analysis on Schizophrenia and Depression patients
+# Analysis of circadian and ultra-circadian cycles to classify schizophrenic and non-schizophrenic persons
 
 
 ## Process
-1. Explorative Analysis
-2. Define regression or classification problem
-3. Implement basic models
+1. Explorative analysis of the time series
+2. Features extraction
+3. Basic logistic regression
 
-## Explorative Analysis 
-* Extract the daily(24h/12h) and nightly structure 
-* Visualize autocorrelation, seasonality, distributions 
-* Calculate statistical features
-    * Mean 
-    * Standard deviation
+## Explorative Analysis
+* Extract the daily(24h/12h) and nightly structure
+* Visualize autocorrelation, seasonality, boxplots, Fourier series
+* Fourier transformation
+## Extract features
+    * Daily/ Nightly mean  
+    * Daily/ Nightly variance
     * Zero proportion
-    * Daily, nightly difference: measure DTW and/or cosine similiarity
+    * Day and night differences
+    * Daily differences
+    * Fourier amplitude and phase
+## Basic logistic regression model
+* Check for multicollineartiy
+* Check for non-linearity
+
 
 ## Papers
 1. https://dl.acm.org/doi/pdf/10.1145/3204949.3208125
