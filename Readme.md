@@ -1,5 +1,5 @@
 
-#Analysis of circadian and ultra-circadian cycles to improve data augmentation techniques for time series for classification of schizophrenia patients
+# Analysis of circadian and ultra-circadian cycles to improve data augmentation techniques for time series for classification of schizophrenia patients
 
 ## Problem statement
 Medical data is known for small sample sizes and thus methods can lack generalization. In the given data set of Psykose, there is a small sample size given the number of patients but a highly sampled time series per patient.
@@ -18,7 +18,6 @@ The idea is to frame the time series and it's underlying pattern with dynamic mo
 6. Implement CNN with augmented spectrogram pictures as comparative
 
 ## Literature
-1. 
 
 ## Papers datasets
 1. https://dl.acm.org/doi/pdf/10.1145/3204949.3208125
