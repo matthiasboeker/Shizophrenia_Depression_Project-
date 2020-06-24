@@ -90,4 +90,38 @@ def get_intervals(data, intervals = 0):
                 bin_n.append(df)
         data_n = pd.concat(bin_n,axis=1, ignore_index= True) 
         return data_n
+
+def confusion_matrix(y,y_hat):
+    confusion_matrix = np.zeros((2,2))
+    #True Positive
+    confusion_matrix[0,0] = np.sum(np.logical_and((y == 1), (y_hat==1))*1)
+    #True Negative
+    confusion_matrix[1,1] = np.sum(np.logical_and((y == 0), (y_hat==0))*1)
+    #False positive
+    confusion_matrix[0,1] = np.sum(np.logical_and((y == 1), (y_hat==0))*1)
+    #False negative
+    confusion_matrix[1,0] = np.sum(np.logical_and((y == 0), (y_hat==1))*1)
+    return confusion_matrix    
+
+def binary_classifier(confusion_matrix, score = 'a'):
     
+    if score == 'a':
+        accuracy = (confusion_matrix[1,1]+confusion_matrix[0,0])/(np.sum(confusion_matrix))
+        return(accuracy)
+    if score == 'r':
+        recall = confusion_matrix[1,1]/(confusion_matrix[1,1]+confusion_matrix[1,0])
+        return recall
+    if score == 'fpr':
+        fpr = confusion_matrix[0,1]/(confusion_matrix[0,1]+confusion_matrix[1,1])
+        return fpr
+    if score == 'fone':
+        f1 = (2*confusion_matrix[0,0])/(2*confusion_matrix[0,0]+confusion_matrix[0,1]+confusion_matrix[1,0])
+        return f1
+    if score == 'mcc':
+         mcc = ((confusion_matrix[1,1]*confusion_matrix[0,0])-(confusion_matrix[0,1]*confusion_matrix[1,0]))/np.roots((confusion_matrix[0,0]+confusion_matrix[0,1])*(confusion_matrix[0,0]+confusion_matrix[1,0])*(confusion_matrix[1,1]+confusion_matrix[0,1])*(confusion_matrix[1,1]+ confusion_matrix[1,0]))
+         return mcc
+    else: 
+        print('Choose score: a, r, fpr, fone, mmcc')
+        
+    
+   
