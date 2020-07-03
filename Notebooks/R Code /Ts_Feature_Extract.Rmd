@@ -1,0 +1,117 @@
+---
+title: "TS_Features_Clustering"
+author: "Matthias Boeker"
+date: "2 7 2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(readr)
+library(tsfeatures)
+library(gtools)
+library(stats)
+library(factoextra)
+library(ggplot2)
+library(rmarkdown)
+
+```
+
+## Load in Data 
+
+The dataset contains actigraphy time series of 22 schizophrenic patients and 32 control persons. 
+Actigraph data is provided by a wrist advice which calculates the acceleration. The dataset will be investigated in order to to improve classification of from Schizophrenia suffering persons. 
+
+```{r load in data}
+setwd('~/Desktop/Master_Thesis/Schizophrenia_Depression_Project/Data/psykose/patient')
+list_names = list.files()
+dataset_p <- list()
+list_names <- mixedsort(sort(list_names))
+for (i in 1:length(list_names)){
+  temp_data <- read_csv(list_names[i],  col_names = TRUE ,cols('timestamp' = col_datetime(format = ""), 'date' = col_date(format = ""), 'activity'=col_double()))
+  temp_data$date <- NULL
+  dataset_p[[i]] <- ts(temp_data$activity,start=1,frequency=24*60)
+}
+setwd('~/Desktop/Master_Thesis/Schizophrenia_Depression_Project/Data/psykose/control/')
+list_names = list.files()
+dataset_c <- list()
+list_names <- mixedsort(sort(list_names))
+
+for (i in 1:length(list_names)){
+  temp_data <- read_csv(list_names[i],  col_names = TRUE ,cols('timestamp' = col_datetime(format = ""), 'date' = col_date(format = ""), 'activity'=col_double()))
+  temp_data$date <- NULL
+  dataset_c[[i]] <- ts(temp_data$activity,start=1,frequency=24*60)
+}
+setwd('~/Desktop/Master_Thesis/Schizophrenia_Depression_Project/')
+```
+
+## Extract Time series features
+
+Rob Hyndman provides a R package which extract relevant time series features like:
+* Stability
+* Autocorrelation coefficients
+* Unit roots
+
+
+In total 27 features were extracted. More details can be found: http://business.monash.edu/econometrics-and-business-statistics/research/publications
+
+```{r pressure, echo=FALSE}
+feat_patients <- tsfeatures(dataset_p)
+feat_control <- tsfeatures(dataset_c)
+feat_control[c('nperiods', 'frequency', 'seasonal_period')] <- NULL
+feat_patients[c('nperiods', 'frequency', 'seasonal_period')] <- NULL
+feat_patients$condition <- 1
+feat_control$condition <- 0
+
+features<- rbind(feat_patients, feat_control)
+head(features)
+```
+
+A PCA is applied to reduce the feature space down to 2 Eigenvectors. 
+The Eigenvectors are scatter to identify potential clusters/ differences with in the two groups (patient/control). 
+
+```{r pca, echo=FALSE}
+pca  <- prcomp(features[,c(1:17)], center = TRUE,scale. = TRUE)
+
+new_pca <-data.frame()
+new_pca <- cbind(pca$x[,1],pca$x[,2],features[,18] )
+names(new_pca) <- c('PC1','PC2','cond')
+ggplot(new_pca, aes(x=PC1, y=PC2, ,color=cond )) +geom_point()
+
+```
+
+
+Points annoted with a 1 are Schizophrenic patients (light blue), other are annoted with a 0. 
+We can observe, that the upper left part seems to build a cluster but there are some Patient points which clearly fall in the same field as the control group. 
+It can be assumed that there might be different clusters within the Patients data. 
+
+A PCA to only the Patients data will be conducted to analyse differences and visualize clusters. 
+
+```{r pca_to_patients, echo= FALSE}
+pat_pca <-prcomp(feat_patients[,c(1:17)], center = TRUE,scale. = TRUE)
+p_pca <-data.frame(pat_pca$x[,1],pat_pca$x[,2])
+names(p_pca) <- c('PC1','PC2')
+km.res <- kmeans(p_pca, centers = 3, iter.max = 10, nstart = 1)
+
+p_pca$clusters <- km.res$cluster
+ggplot(p_pca, aes(x=PC1, y=PC2, color=clusters)) +geom_point() 
+
+```
+
+Conducting a kmean cluster analysis works out three clear clusters within the patients data. The cluster information of the patients data will now be transferred into the overall scatterplot of patients and the control group.
+
+```{r overall_cluster:analysis, echo=FALSE}
+cluster_vec = c(km.res$cluster, replicate(32, 0))
+pca  <- prcomp(features[,c(1:17)], center = TRUE,scale. = TRUE)
+new_pca <-data.frame()
+new_pca <- cbind(pca$x[,1],pca$x[,2],features[,18] )
+new_pca$clusters <-cluster_vec 
+names(new_pca) <- c('PC1','PC2','cond','clusters')
+
+ggplot(new_pca, aes(x=PC1, y=PC2, ,color=cond ,shape=clusters)) +geom_point()+scale_shape_identity()
+
+```
+
+As we see in the scatter plot, one of the cluster we worked out within the patients dataset is indeed the one falling in within the field of the control. 
+Further analysis into the acutal features as to be conducted to work out the actual difference in the time series features of the Patients and the control group. 
+
