@@ -2,20 +2,27 @@
 # Analysis of circadian and ultra-circadian cycles to improve data augmentation techniques for time series for classification of schizophrenia patients
 
 ## Problem statement
-Medical data is known for small sample sizes and thus methods can lack generalization. In the given data set of Psykose, there is a small sample size given the number of patients but a highly sampled time series per patient.
-Thus, the large amount of data within a single time series should be used for data augmentation to enrich the small sample size of patients. Moreover, the information about circadian cycles and ultra circadian cycles should be preserved while applying augmentation methods.
+Medical data is known for small sample sizes and thus methods can lack generalization. 
+The given Psykose dataset contains time series data of 55 individuals, 23 of these individuals suffer a medical condition while 32 individuals belong to the control group. The Psykose dataset measured actigraphy time series data of schizophrenic individuals. The time series per individual have a sample size up to 21500 samples, which corresponds to a measurement of wrist acceleration by minute over two weeks.   
 
 ## Project idea
-The idea is to frame the time series and it's underlying pattern with dynamic models like ARIMA, GARCH, Hidden-Markov Models and/or frequency models like Fourier decompositions. Since the estimated parameters for a time series are a one sample for the patients dataset, a parameter distribution can be approximated (bootstrapping). From this approximated parameter distribution parameter values will be randomly drawn to create synthetic time series.
+to improve the classification of actigraph time series is to segment each time series in active and resting phases. The extracted segments are then used as input for the classification. 
+Hidden Markov Models are used to segment the time series period in the two different phases. The segmentation procedure. The decoding problem identifies the underlying hidden states which generate the observed process. 
+In this case, the hidden states are assumed to be the resting/ active periods. 
+A heuristic to determine the starting solution will be proposed and evaluated. 
+For each identified active and resting period, time series features from fitted models will be extracted. Moreover, feature describing the relation between different periods are introduced. 
+A SVM or logistic regression will be used as a classification algorithm for the feature space. 
+Additional, ways of augmenting the different periods per patient can be used to feed a LSTM Network for an improved classification. 
+
 
 ## Process
-1. Explorative analysis of the time series
+1. Explorative Analysis of the Actigraphy Time Series
 2. Analysis of circadian and ultra-circadian cycles in the frequency domain
-2. Comparative study of statistical models
-3. Approximation of parameter distribution
-4. Creation of synthetic time series (validation?)
-5. Implement baseline ML classifier for comparative experiment
-6. Implement CNN with augmented spectrogram pictures as comparative
+3. Hidden Markov Models for Time Series Segmentation
+	3.1 State Estimation
+	3.2 Parameter Estimation 
+5. Statistical Modeling of extracted Time Series Segments  
+6. Classification based on statistical Features 
 
 ## Literature
 
