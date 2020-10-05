@@ -35,7 +35,7 @@ def object_fun(x,T,Z,Xi,N):
                 
     f=10000/np.sum(temp)
     return f
-    
+
 #Find the initial means and covariance matrices for each of the states
 # Split the observations into evenly size states from smallest to largest
 
@@ -69,9 +69,6 @@ model._init(X)
 # Estimate the b 
 b = model._compute_log_likelihood(X)
 
-st = model._initialize_sufficient_statistics()
-model._do_mstep(st)
-
 #Estimate the alphas and betas from forward and backward algo 
 alpha_sum , log_alphas = model._do_forward_pass(b)
 log_betas = model._do_backward_pass(b)
@@ -94,7 +91,7 @@ for t in range(0,T-1):
     d = Xi[:,:,t]
     Xi[:,:,t] = d - special.logsumexp(Xi[:,:,t])
 
-model0.transmat_
+
 
 # E The expectation step estimate the state occupation probabilities 
 Xi = np.zeros((N, N, T - 1))

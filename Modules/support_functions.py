@@ -75,6 +75,17 @@ def preprocess(days,shizophrenia_p,shizophrenia_c):
     days_c = days[days['type']=='control'].sort_values(by=['id'])
     days_c= days_c.reset_index(drop=True)
     
+    ind = [0,1,2,3,4,5,6,30,31]
+    for o in ind:
+        shizophrenia_c[o] = shizophrenia_c[o][1*18*60:]
+        shizophrenia_c[o] = shizophrenia_c[o].reset_index()
+
+            
+    shizophrenia_c[26] = shizophrenia_c[26][50:].reset_index()
+    shizophrenia_c[27] = shizophrenia_c[27][1*23*60:].reset_index()
+    shizophrenia_c[28] = shizophrenia_c[28][1*23*60:].reset_index()
+    shizophrenia_c[29] = shizophrenia_c[29][(1*21*60)-30:].reset_index()
+    
     #Cut the Signals to the amount of days documented 
     for k in range(0,len(shizophrenia_p)):
         shizophrenia_p[k] = shizophrenia_p[k]['activity'][:days_p['length'][k]]

@@ -13,7 +13,6 @@ import numpy as np
 import os
 import pandas as pd 
 import matplotlib.pyplot as plt
-from scipy.ndimage import gaussian_filter
 
 os.chdir('/Users/matthiasboeker/Desktop/Master_Thesis/Schizophrenia_Depression_Project/')
 from Modules.support_functions import *
@@ -47,9 +46,9 @@ shizophrenia_p, shizophrenia_c = preprocess(days,shizophrenia_p, shizophrenia_c)
 # Calculate the AICS and BICS for different d parameteters for different individuals, time delay embedding Conditioned 
 series = range(0,len(shizophrenia_c))
 frames = [gaussian_filter(shizophrenia_c[n], sigma=50) for n in series]
-params = range(1,10)
+params = range(1,15)
 
-T = [[np.array(frame)[np.arange(w)+ np.arange(np.max(frame.shape[0] - (w-1), 0)).reshape(-1,1)] for w in params ] for frame in frames ]
+matrices = [[np.array(frame)[np.arange(w)+ np.arange(np.max(frame.shape[0] - (w-1), 0)).reshape(-1,1)] for w in params ] for frame in frames ]
 
 model =  mix.GaussianMixture(4, covariance_type='full', random_state=0)
 aics = [[model.fit(matrix).aic(matrix) for matrix in matrices[k]] for k in range(0,32)]
@@ -143,7 +142,7 @@ plt.show()
 
 
 #Control
-control = np.array(shizophrenia_c[1]).reshape(-1,1)
+control = np.array(matrix)
 sigmas = range(1,11)
 n_comp = range(1,11)
 models = [mix.GaussianMixture(n, covariance_type='full', random_state=0)
@@ -152,8 +151,8 @@ grid_c = np.array([[model.fit(gaussian_filter(control,
                                    sigma=sigma)).bic(gaussian_filter(control, sigma=sigma)) for sigma in sigmas]for model in models])
 
 #Surface Plot Patient 
-x = np.arange(1, 21, 1)
-y = np.arange(1, 21, 1)
+x = np.arange(1, 11, 1)
+y = np.arange(1, 11, 1)
 X, Y = np.meshgrid(x, y)
 Z = grid_c
 
