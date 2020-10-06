@@ -7,6 +7,7 @@ Created on Thu May 28 15:15:06 2020
 supportive function  
 """
 import re
+import os 
 import pandas as pd
 import datetime as dt 
 import numpy as np
@@ -30,6 +31,35 @@ def eval_embedded_dim(ts, tau = 100, maxnum = 500, dim = np.arange(8, 12)):
             except: 
                 print('fail in adding a dimension ',kl )
     return(np.argmin(f1))
+    
+    
+def load_data():
+    os.chdir('/Users/matthiasboeker/Desktop/Master_Thesis/Schizophrenia_Depression_Project/')
+    
+    #Import Schizophrenia data
+    os.chdir('/Users/matthiasboeker/Desktop/Master_Thesis/Schizophrenia_Depression_Project/Data/psykose/patient')
+    files = os.listdir()
+    files.sort(key=natural_keys)
+    shizophrenia_p = list()
+    for i in range(0,len(files)):
+        if files[i].endswith('.csv'):
+            shizophrenia_p.append(pd.read_csv(files[i]))
+    
+    os.chdir('/Users/matthiasboeker/Desktop/Master_Thesis/Schizophrenia_Depression_Project/Data/psykose/control')
+    files = os.listdir()
+    files.sort(key=natural_keys)
+    shizophrenia_c = list()
+    for i in range(0,len(files)):
+        if files[i].endswith('.csv'):
+            shizophrenia_c.append(pd.read_csv(files[i]))
+            #Import demographics on Schizophrenia patients
+            os.chdir('/Users/matthiasboeker/Desktop/Master_Thesis/Schizophrenia_Depression_Project/Data/psykose')
+            patients_info = pd.read_csv('patients_info.csv')
+            #Import demographics on control group 
+            control_info = pd.read_csv('scores.csv')
+            #Import days 
+            days = pd.read_csv('days.csv')
+            shizophrenia_p, shizophrenia_c = preprocess(days,shizophrenia_p, shizophrenia_c)
 
     
 

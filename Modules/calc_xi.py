@@ -14,7 +14,7 @@ T = len(X)
 X = X.reshape(len(X), 1)
 
 #Initialize the Gaussian Mixture HMM 
-model = hmm.GaussianHMM(n_components=N,  covariance_type="full", algorithm='viterbi', random_state=0,n_iter=100)
+model = hmm.GaussianHMM(n_components=N,  covariance_type="spherical", algorithm='viterbi', random_state=0,n_iter=100)
 model._init(X)
 # Estimate the b 
 b = model._compute_log_likelihood(X)
@@ -78,25 +78,7 @@ def _compute_log_xi(n_samples, n_components, fwdlattice, log_transmat, bwdlattic
 w_res = _compute_log_xi(T,N,log_alphas, log_mask_zero(model.transmat_),log_betas, b,log_xi_sum)
 
 
-def object_fun(x,T,Z,Xi,N):
-    print('function call process')
-
-    x = x.reshape((3,3,2))
-    print(x[:,:,1])
-    temp = np.zeros((T-1)*N*N)
-    c=0
-    for t in range(0,T-1):
-        for i in range(0,N):
-            for j in range(0,N):
-                temp[c] = Xi[i,j,t]*((x[i,j,0]+np.dot(x[i,j,1],Z[t]))-special.logsumexp(x[i,:,0]+np.dot(x[i,:,1],Z[t])))
-                c=c+1
-                
-    f=1/np.sum(temp)
-    return f
                                              
-
-
-
 #initial guess
 #ind plus one for the constant c0
 x0 = np.zeros([N,N,ind+1])
@@ -113,7 +95,6 @@ bnds = Bounds(lb.flatten(),ub.flatten())
 param = (T,Z, Xi,N)
 res = optimize.minimize(object_fun,x0 = x0, bounds=bnds,args=param,method='SLSQP')
 res_x = res.x.reshape((3,3,2))
-
 object_fun(x0,T,Z,Xi,N)
 
 

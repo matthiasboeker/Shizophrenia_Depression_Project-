@@ -64,11 +64,11 @@ A = np.random.rand(N,N)
 
 
 #Initialize the Gaussian Mixture HMM 
-model = hmm.GaussianHMM(n_components=N,  covariance_type="full", algorithm='viterbi', random_state=0,n_iter=100)
+model = hmm.GaussianHMM(n_components=N,  covariance_type="diag", algorithm='viterbi', random_state=0,n_iter=100)
 model._init(X)
 # Estimate the b 
 b = model._compute_log_likelihood(X)
-
+pos = model._compute_posteriors(log_alphas,log_betas)
 #Estimate the alphas and betas from forward and backward algo 
 alpha_sum , log_alphas = model._do_forward_pass(b)
 log_betas = model._do_backward_pass(b)

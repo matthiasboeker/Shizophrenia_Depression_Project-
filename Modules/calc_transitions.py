@@ -25,7 +25,7 @@ def object_fun(x,T,Z,Xi,N):
     f=1000/np.sum(temp)
     return f
 
-"Testable functions"
+
 def _calc_xi_step(n_samples, n_components, fwdlattice, log_transmat, bwdlattice, framelogprob):
     work_buffer = np.full((n_components, n_components), -np.inf, dtype= np.float64)
     logprob = special.logsumexp(fwdlattice)
