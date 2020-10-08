@@ -11,6 +11,7 @@ import os
 import matplotlib.pyplot as plt
 import pandas as pd 
 from scipy import stats
+from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 
 #Import the data 
 os.chdir('/Users/matthiasboeker/Desktop/Master_Thesis/Schizophrenia_Depression_Project/')
@@ -44,14 +45,18 @@ shizophrenia_p, shizophrenia_c = preprocess(days,shizophrenia_p, shizophrenia_c)
 "Analyse the distributions and show that differentiated one works maybe better in jupyter notebook!"
 d = 1
 frame = shizophrenia_p[0]
-frame = shizophrenia_p[0][:60*24].diff(d)[d:]
+frame = shizophrenia_p[0].diff(d)[d:]
 woz = frame[frame!=0]
 plt.scatter(frame.index, frame, marker='.')
 plt.scatter(frame.index[:24*60],frame[:24*60], marker='.')
-np.log(woz).hist(bins=50)
+np.log(frame-min(frame)+1).hist(bins=50)
+plt.title('Histogram Log Transformed differentiated TS')
 
 
-
+frame = shizophrenia_c[0]
+meaned = frame.rolling(window=60).mean()[60:]
+meaned.hist(bins = 100)
+plt.title('Histogram of sliding window 60')
 
 
 # Calculate BIC for different embedding dimensions 
@@ -174,3 +179,6 @@ for x, l, c in zip(tt_diff.index[:5000], tt_diff[:5000], color):
 #plt.plot(state_prob[:5000]*1000, label = 'State probabilty *1000')
 #plt.legend(loc='upper right')
 #print(model.fit(np.array(gauss_filt).reshape(-1, 1)).bic(np.array(gauss_filt).reshape(-1, 1)))
+    
+t = 1
+plt.scatter(shizophrenia_p[0][t:], shizophrenia_p[0][:-t], marker='.')
