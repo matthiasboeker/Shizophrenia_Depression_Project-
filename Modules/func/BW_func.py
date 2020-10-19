@@ -10,7 +10,17 @@ import matplotlib.pyplot as plt
 from scipy import special 
 from scipy import optimize
 import numpy as np
-from Modules.help_functions import *
+from Modules.func.help_functions import *
+
+
+def load_boundaries(N,ind):
+        #Introduce boundaries for the optimization, set diag zero
+    lb = -np.inf*np.ones([N,N,ind+1])
+    [np.fill_diagonal(lb[:,:,l],0) for l in range(0,lb.shape[2])]
+    ub = np.inf*np.ones([N,N,ind+1])
+    [np.fill_diagonal(ub[:,:,l],0) for l in range(0,ub.shape[2])]
+    bnds = optimize.Bounds(lb.flatten(),ub.flatten())
+    return bnds         
 
 
 
@@ -51,7 +61,7 @@ def _viterbi(n_samples, n_components, log_startprob, log_transmat, framelogprob)
 
 #Object funtion for the maximization of the transition ML 
 def object_fun(x,T,Z,Xi,N,ind):
-    #print('optimization in process')
+    #print('call object func')
 
     x = x.reshape((N,N,ind+1))
     temp = np.zeros((T-1)*N*N)
@@ -158,13 +168,23 @@ def _calc_mean_cov(posteriors, obs, means_prior, means_weight, covars_prior, cov
     
     return means, covars
     
+def calc_trans_w(n_samples,n_components ,gamma , Xi):
+    trans_ = np.zeros((n_components,n_components,n_samples-1))
+    for t in range(0,n_samples-1):
+                trans_[:,:,t] = np.exp(Xi[:,:,t])/gamma[t,:]
+    return trans_
+
+
+
 def calc_trans(n_samples,n_components ,  Xi, res_x, Z ):
     trans_ = np.zeros((n_components,n_components,n_samples-1))
     for t in range(0,n_samples-1):
         for i in range(0,n_components):
             for j in range(0,n_components):
-                trans_[i,j,t] = np.exp(Xi[i,j,t])*((res_x[i,j,0]+np.dot(res_x[i,j,1],Z[t]))-special.logsumexp(res_x[i,:,0]+np.dot(res_x[i,:,1],Z[t])))
+                #trans_[i,j,t] = np.exp(Xi[i,j,t])*((res_x[i,j,0]+np.dot(res_x[i,j,1],Z[t]))-special.logsumexp(res_x[i,:,0]+np.dot(res_x[i,:,1],Z[t])))
+                trans_[i,j,t] = (res_x[i,j,0]+np.dot(res_x[i,j,1],Z[t]))-special.logsumexp(res_x[i,:,0]+np.dot(res_x[i,:,1],Z[t]))
     return trans_
+
 
 def m_step(trans_, posteriors):
     startprob_ = posteriors[0]
@@ -181,10 +201,9 @@ def convergence(hist, breake, tol):
         if delta < tol :
             breake = True 
   
-
-
     
-def EA_func(model, N, X, Z, tol, cycles, bnds, ind):
+    
+def EA_func(model, N, X, Z, cycles, bnds, ind,  tol=1e-5):
     #1.4 Initialize the model 
     T = len(X)
     model.transmat_ = np.repeat(model.transmat_ [:,:,np.newaxis], T, axis = 2)
@@ -227,19 +246,23 @@ def EA_func(model, N, X, Z, tol, cycles, bnds, ind):
         
         #Minimize object function to get the optimized covariate coefficients 
         param = (T, Z, Xi,N, ind)
-        options = {'maxiter':1000}
+        options = {'maxiter':50}
         print('Start of internal optimization')
         res = optimize.minimize(object_fun,x0 = x0, bounds=bnds,options=options,args=param,method='SLSQP')
         res_x = res.x.reshape((N,N,ind+1))
         print('End of internal optimization')
         #Update the intital guess 
-        #x0 = res_x
+        x0 = res_x
         
-        #Calculate the time dependent Transmittion probability 
-        trans_ = calc_trans(T,N, Xi, res_x, Z)
+        #Calculate the time dependent Transmittion probability with or without Covarate
+        trans_ = calc_trans(T,N, Xi, res_x, Z) #with Covariate
+        #trans_ = calc_trans_w(T,N ,gamma , Xi)
+
+        
         
         #3 Do M step 
         #3.1 Update 
+        model.link_coef = x0 
         model.startprob_, model.transmat_ = m_step(trans_, gamma)
         
         

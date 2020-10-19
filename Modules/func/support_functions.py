@@ -13,30 +13,25 @@ import datetime as dt
 import numpy as np
 from statsmodels.tsa.stattools import kpss, adfuller 
 
+def save_res(prefix, base):
+    os.chdir('/Users/matthiasboeker/Desktop/Master_Thesis/Schizophrenia_Depression_Project/Results') 
+    trans = np.vstack(base.transmat_).T
+    cov = base.covars_.reshape((2,1))
+    mean = base.means_.reshape((2,1))
+    start_prob = base.startprob_.reshape((2,1))
+    
+    coef = np.hstack(base.link_coef)
+    res = np.concatenate((cov,mean,start_prob, coef), axis = 1)
+    name_t = "%s_Transition_matrix.csv" % prefix
+    name_r = "%s_Results.csv" % prefix
+    np.savetxt(name_t, trans, delimiter=",")
+    np.savetxt(name_r, res, delimiter=",", header= "covariance, means, start_prob, link_coef01, link_coef02, link_coef11, link_coef12", comments='' )
+            
+        
 
 
+def load_data():    
 
-
-def eval_embedded_dim(ts, tau = 100, maxnum = 500, dim = np.arange(8, 12)):
-    try:
-        f1, f2, f3 = dimension.fnn(np.array(ts), tau=tau, dim=dim, window=10, metric='euclidean', maxnum=maxnum)
-    except:
-        print('need higher dimensions')
-    #return(np.argmin(f1))
-    
-    else:
-        for kl in range(1,4):
-            try:
-                f1, f2, f3 = dimension.fnn(np.array(ts), tau=tau, dim=dim+kl, window=10, metric='euclidean', maxnum=maxnum)
-            except: 
-                print('fail in adding a dimension ',kl )
-    return(np.argmin(f1))
-    
-    
-def load_data():
-    os.chdir('/Users/matthiasboeker/Desktop/Master_Thesis/Schizophrenia_Depression_Project/')
-    
-    #Import Schizophrenia data
     os.chdir('/Users/matthiasboeker/Desktop/Master_Thesis/Schizophrenia_Depression_Project/Data/psykose/patient')
     files = os.listdir()
     files.sort(key=natural_keys)
@@ -44,7 +39,7 @@ def load_data():
     for i in range(0,len(files)):
         if files[i].endswith('.csv'):
             shizophrenia_p.append(pd.read_csv(files[i]))
-    
+        
     os.chdir('/Users/matthiasboeker/Desktop/Master_Thesis/Schizophrenia_Depression_Project/Data/psykose/control')
     files = os.listdir()
     files.sort(key=natural_keys)
@@ -52,16 +47,13 @@ def load_data():
     for i in range(0,len(files)):
         if files[i].endswith('.csv'):
             shizophrenia_c.append(pd.read_csv(files[i]))
-            #Import demographics on Schizophrenia patients
-            os.chdir('/Users/matthiasboeker/Desktop/Master_Thesis/Schizophrenia_Depression_Project/Data/psykose')
-            patients_info = pd.read_csv('patients_info.csv')
-            #Import demographics on control group 
-            control_info = pd.read_csv('scores.csv')
-            #Import days 
-            days = pd.read_csv('days.csv')
-            shizophrenia_p, shizophrenia_c = preprocess(days,shizophrenia_p, shizophrenia_c)
-
-    
+    #Import demographics on Schizophrenia patients
+    os.chdir('/Users/matthiasboeker/Desktop/Master_Thesis/Schizophrenia_Depression_Project/Data/psykose')
+    #Import days 
+    days = pd.read_csv('days.csv')
+    shizophrenia_p, shizophrenia_c = preprocess(days,shizophrenia_p, shizophrenia_c)
+    return shizophrenia_p, shizophrenia_c
+   
 
 
 def atoi(text):
@@ -224,44 +216,6 @@ def binary_classifier(confusion_matrix, score = 'a'):
     else: 
         print('Choose score: a, r, fpr, fone, mmcc')
         
-
-def detect_circ(signal, adj = 0.03):
-    from scipy.fft import fft, ifft
-    from scipy.fft import fftfreq
-    active = list()
-    
-    trans_fft = fft(signal)
-    trans_psd = np.log10(np.abs(trans_fft) ** 2)
-    freq = fftfreq(len(signal),(1. / 32))
-    i = freq > 0
-    max_peak = freq[np.argmax(trans_psd[i])]
-    trans_fft_bis = trans_fft.copy()
-    trans_fft_bis[np.abs(freq) > max_peak+adj] = 0
-    back = pd.Series(np.real(ifft(trans_fft_bis)))
-    deriv = np.gradient(back)
-
-    asign = np.sign(deriv)
-    signchanges = pd.Series(((np.roll(asign, 1) - asign) != 0).astype(int))
-    extreme_val = signchanges.loc[signchanges==1].index
-    deriv2 = np.gradient(deriv)
-    asign2 = np.sign(deriv2)
-    signchanges2 = pd.Series(((np.roll(asign2, 1) - asign2) != 0).astype(int))
-    extreme_val2 = signchanges2.loc[signchanges2==1].index
-    
-    for i in range(0, len(extreme_val2)-1):
-        ren_s = extreme_val2[i]
-        ren_e = extreme_val2[i+1]
-        active.append(signal[ren_s:ren_e])
-
-            
-    res = pd.DataFrame([], columns = ['Mean', 'Variance'])
-    for i in range(0,len(active)):
-        ins_ac = [np.mean(active[i]), np.var(active[i])]
-        res = np.vstack([res, ins_ac])
-        
-    results = pd.DataFrame(res, columns = ['Mean', 'Variance'])
-    
-    return results, extreme_val2
    
 def snippets(k):
     breaker = k.index[0]
