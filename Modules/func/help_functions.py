@@ -12,7 +12,7 @@ import datetime as dt
 import numpy as np
 from scipy import special 
 import os 
-from Modules.support_functions import *
+from Modules.func.support_functions import *
 
 def log_mask_zero(a):
     """Computes the log of input probabilities masking divide by zero in log.
@@ -87,5 +87,5 @@ def object_fun(x,T,Z,Xi,N, ind):
                 temp[c] = np.exp(Xi[i,j,t])*((x[i,j,0]+np.dot(x[i,j,1],Z[t]))-special.logsumexp(x[i,:,0]+np.dot(x[i,:,1],Z[t])))
                 c=c+1
                 
-    f=1000/np.sum(temp)
+    f=100000000/np.sum(temp)
     return f

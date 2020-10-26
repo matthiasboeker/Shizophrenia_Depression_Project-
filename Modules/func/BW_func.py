@@ -11,7 +11,8 @@ from scipy import special
 from scipy import optimize
 import numpy as np
 from Modules.func.help_functions import *
-
+from hmmlearn import stats
+import matplotlib.pyplot as plt
 
 def load_boundaries(N,ind):
         #Introduce boundaries for the optimization, set diag zero
@@ -23,10 +24,14 @@ def load_boundaries(N,ind):
     return bnds         
 
 
-
 def _viterbi(n_samples, n_components, log_startprob, log_transmat, framelogprob):
 
 
+    covars = covars.reshape(n_components,1)
+    means = means.reshape(n_components,1)
+    #From hmmlearn import stats: to get a multivariaite density for state probabilities 
+    #Here only the diagonals of the covariance is used! You might want to use other forms
+    framelogprob = stats._log_multivariate_normal_density_diag(X, means, covars)
     state_sequence = np.empty(n_samples, dtype=np.int32)
     viterbi_lattice = np.zeros((n_samples, n_components))
         
@@ -77,61 +82,85 @@ def object_fun(x,T,Z,Xi,N,ind):
 
 #Calculate the log Xi per time step 
 "Calculate Xi"
-def _calc_xi_step(n_samples, n_components, fwdlattice, log_transmat, bwdlattice, framelogprob):
-    work_buffer = np.full((n_components, n_components), -np.inf, dtype= np.float64)
-    logprob = special.logsumexp(fwdlattice)
-    div = special.logsumexp(special.logsumexp(log_transmat,axis=0)+framelogprob+bwdlattice)
-    for i in range(n_components):
-        for j in range(n_components):
-            work_buffer[i, j] = (fwdlattice[i]
-                                         + log_transmat[i, j]
-                                         + framelogprob[ j]
-                                         + bwdlattice[j]
-                                         - logprob - div)
+
+
+
+
+#Calculate the overall time dependent log Xi   
+def _calc_xi(n_samples, n_components, fwdlattice, log_transmat, bwdlattice, framelogprob, log_gamma):
+    work_buffer = np.full((n_components, n_components, n_samples-1), -np.inf,dtype= np.float64)    
+    for t in range(0,n_samples - 1):
+        for i in range(0,n_components):
+            for j in range(0,n_components):
+                work_buffer[i, j, t] = log_gamma[t,i] + log_transmat[i, j, t]+ framelogprob[t+1, j] + bwdlattice[t+1, j] - bwdlattice[t, i]
     return(work_buffer)
 
-#Calculate the overall time dependent log Xi     
-def _calc_xi(n_samples, n_components, fwdlattice, log_transmat, bwdlattice, framelogprob):
-    work_buffer = np.full((n_components, n_components), -np.inf, dtype= np.float64)
-    
-    #logprob = np.zeros(n_samples-1) 
-    logprob = np.zeros(n_samples-1)
-    div = np.zeros(n_samples-1)
-    #log_xi_sum = np.zeros((n_components, n_components, n_samples))
-    log_xi = np.full((n_components, n_components, n_samples), -np.inf, dtype= np.float64)
-    
-    for t in range(n_samples - 1):
-        logprob[t] = special.logsumexp(fwdlattice[t,:])
-        div[t] = special.logsumexp(special.logsumexp(log_transmat[:,:,t],axis=0)+framelogprob[t + 1, :]+bwdlattice[t + 1, :])
-        work_buffer = _calc_xi_step(n_samples,n_components,fwdlattice[t,:], log_transmat[:,:,t],bwdlattice[t,:], framelogprob[t,:])
-        
-        
-        log_xi[:,:,t] = work_buffer[:, :]
-    return(log_xi)
+
+
+
+
+
+
+#"Running versions"
+#def _calc_xi_step(n_samples, n_components, fwdlattice, log_transmat, bwdlattice, framelogprob):
+#    work_buffer = np.full((n_components, n_components), -np.inf, dtype= np.float64)
+#    logprob = special.logsumexp(fwdlattice)
+#    div = special.logsumexp(special.logsumexp(log_transmat,axis=0)+framelogprob+bwdlattice)
+#    for i in range(n_components):
+#        for j in range(n_components):
+#            work_buffer[i, j] = (fwdlattice[i]
+#                                         + log_transmat[i, j]
+#                                         + framelogprob[j]
+#                                         + bwdlattice[j]
+#                                         - logprob - div)
+#    return(work_buffer)
+
+#Calculate the overall time dependent log Xi   
+#def _calc_xi(n_samples, n_components, fwdlattice, log_transmat, bwdlattice, framelogprob):
+#    
+#    work_buffer = np.full((n_components, n_components), -np.inf, dtype= np.float64)
+#    #logprob = np.zeros(n_samples-1) 
+#    logprob = np.zeros(n_samples-   1)
+#    div = np.zeros(n_samples-1)
+#    #log_xi_sum = np.zeros((n_components, n_components, n_samples))
+#    log_xi = np.full((n_components, n_components, n_samples), -np.inf, dtype= np.float64)
+#    
+#    for t in range(n_samples - 1):
+#        logprob[t] = special.logsumexp(fwdlattice[t,:])
+#        #div[t] = special.logsumexp((special.logsumexp(log_transmat[:,:,t], axis=0),framelogprob[t + 1, :],bwdlattice[t + 1, :]))
+#        work_buffer = _calc_xi_step(n_samples,n_components,fwdlattice[t,:], log_transmat[:,:,t],bwdlattice[t+1 ,:], framelogprob[t+1,:])
+#        
+#        
+#        log_xi[:,:,t] = work_buffer[:, :]
+#    return(log_xi)
+
+
 
 
 "Time dependent Transition prob Foward Algorithm"
 
 def time_forward( n_samples,n_components, log_startprob, log_transmat, framelogprob):
-    
-    fwdlattice = np.zeros((n_samples, n_components))
-    work_buffer = np.zeros(n_components, dtype= np.float64)
-    buffer = np.zeros((n_samples, n_components))
+
+    fwdlattice = np.zeros((n_samples, n_components), dtype= np.float64 )
+    work_buffer = np.full(n_components, -np.inf,dtype= np.float64)
     for i in range(n_components):
         fwdlattice[0, i] = log_startprob[i] + framelogprob[0, i]
-        for t in range(1, n_samples-1):
-            for j in range(n_components):
-                for i in range(n_components):
-                    work_buffer[i] = fwdlattice[t - 1, i] + log_transmat[i, j, t]
+    for t in range(1, n_samples):
+        for j in range(n_components):
+            for i in range(n_components):
 
-                buffer[t, j] = special.logsumexp(work_buffer) + framelogprob[t, j]
-    log_prob = special.logsumexp(buffer[-1])
-    return(log_prob, buffer)
+                work_buffer[i] = fwdlattice[t - 1, i] + log_transmat[i, j, t-1]
+            fwdlattice[t, j] = special.logsumexp(work_buffer) + framelogprob[t, j]
+                        
+    log_prob = special.logsumexp(fwdlattice[-1])
+    return(log_prob, fwdlattice)
+
+
 
 
 def time_backward(n_samples, n_components, log_startprob, log_transmat, framelogprob):
-    work_buffer = np.zeros(n_components, dtype= np.float64)
-    bwdlattice = np.zeros((n_samples, n_components))
+    work_buffer = np.full(n_components,-np.inf, dtype= np.float64 )
+    bwdlattice = np.full((n_samples, n_components), -np.inf, dtype= np.float64 )
     for i in range(n_components):
         bwdlattice[n_samples - 1, i] = 0.0
 
@@ -145,52 +174,64 @@ def time_backward(n_samples, n_components, log_startprob, log_transmat, framelog
     return(bwdlattice)
                 
 
-def _calc_gamma(log_alpha, log_beta):
+def _calc_gamma(n_samples, n_components, log_alpha, log_beta):
     log_gamma = log_alpha + log_beta
-    log_normalize(log_gamma, axis=1)
-    return(np.exp(log_gamma))
+    log_normalize(log_gamma, axis = 1)
+    return(log_gamma)
     
 
 def _calc_mean_cov(posteriors, obs, means_prior, means_weight, covars_prior, covars_weight):
+    
     #Extract mean and covariance
+    posteriors = np.exp(posteriors)
     post = posteriors.sum(axis=0)
-    obs = np.dot(posteriors.T, obs)
+    obs_m = np.dot(posteriors.T, obs)
+    obs_c = np.dot(posteriors.T, obs **2 )
     
     denom = post[:, None]
     
-    means = ((means_weight*means_prior + obs))/(means_weight + denom)
+    means = ((means_weight*means_prior + obs_m))/(means_weight + denom)
+    
+    
     mean_diff = means -  means_prior
     
-    cv_num = (means_weight * mean_diff**2 + obs**2 - 2 * means * obs + means**2 * denom)
+    cv_num = (means_weight * mean_diff**2 + obs_c - 2 * means * obs_m + means**2 * denom)
 
     cv_den = max(covars_weight - 1, 0) + denom
     covars = (covars_prior + cv_num) / np.maximum(cv_den, 1e-5)
     
     return means, covars
-    
-def calc_trans_w(n_samples,n_components ,gamma , Xi):
-    trans_ = np.zeros((n_components,n_components,n_samples-1))
+ 
+
+# ERROR IN CACULATION HERE PRODUCES NANs
+def calc_trans_w(n_samples,n_components ,log_gamma , Xi):
+    trans_ = np.full((n_components,n_components,n_samples-1), -np.inf, dtype= np.float64 )
     for t in range(0,n_samples-1):
-                trans_[:,:,t] = np.exp(Xi[:,:,t])/gamma[t,:]
+        for i in range(0,n_components):
+            for j in range(0,n_components):
+                trans_[i,j,t] = Xi[i,j,t]- log_gamma[t,i] 
+
     return trans_
 
 
 
-def calc_trans(n_samples,n_components ,  Xi, res_x, Z ):
+def calc_trans(n_samples,n_components ,  Xi, res_x, Z, gamma ):
     trans_ = np.zeros((n_components,n_components,n_samples-1))
     for t in range(0,n_samples-1):
         for i in range(0,n_components):
             for j in range(0,n_components):
-                #trans_[i,j,t] = np.exp(Xi[i,j,t])*((res_x[i,j,0]+np.dot(res_x[i,j,1],Z[t]))-special.logsumexp(res_x[i,:,0]+np.dot(res_x[i,:,1],Z[t])))
+                #trans_[i,j,t] = np.exp(Xi[i,j,t])*((res_x[i,j,0]+np.dot(res_x[i,j,1],Z[t]))-special.logsumexp(res_x[i,:,0]+np.dot(res_x[i,:,1],Z[t])))/gamma[t,i]
                 trans_[i,j,t] = (res_x[i,j,0]+np.dot(res_x[i,j,1],Z[t]))-special.logsumexp(res_x[i,:,0]+np.dot(res_x[i,:,1],Z[t]))
+    
     return trans_
 
 
 def m_step(trans_, posteriors):
+    
     startprob_ = posteriors[0]
-    startprob_ = np.where(startprob_ == 0, 0, startprob_)
+    startprob_ = np.where(startprob_ == 0, 1e-10, startprob_)
     normalize(startprob_)
-    transmat_ = np.where(trans_ == 0, 0, trans_)
+    transmat_ = np.where(trans_ == 0, 1e-10, trans_)
     normalize(transmat_, axis=1)
     return startprob_, transmat_
  
@@ -207,7 +248,6 @@ def EA_func(model, N, X, Z, cycles, bnds, ind,  tol=1e-5):
     #1.4 Initialize the model 
     T = len(X)
     model.transmat_ = np.repeat(model.transmat_ [:,:,np.newaxis], T, axis = 2)
-    
     #Set up logprob history for convergence 
     hist = []
     breake = False
@@ -218,10 +258,14 @@ def EA_func(model, N, X, Z, cycles, bnds, ind,  tol=1e-5):
         #2.1 First time calculating the b, forward algo alphas, backward algo betas
         #Remember for the log_likelihood update model.means_ and model._covars
         b = model._compute_log_likelihood(X)
-        
-        #Estimate the alphas and betas from forward and backward algo 
+
         log_prob, log_alphas = time_forward( T,N, log_mask_zero(model.startprob_), log_mask_zero(model.transmat_), b)
         log_betas = time_backward(T, N, log_mask_zero(model.startprob_), log_mask_zero(model.transmat_), b)
+        if np.isinf(log_alphas).any():
+            print('alphas inf')
+            print(np.argwhere(np.isinf(log_alphas)))
+
+
         
         hist.append(log_prob)
         convergence(hist, breake, tol)
@@ -230,12 +274,11 @@ def EA_func(model, N, X, Z, cycles, bnds, ind,  tol=1e-5):
             print('iteration: ', cyc)
             break
         
-        
+        gamma = _calc_gamma(T, N, log_alphas, log_betas)
+
         #Calculate the Xis 
-        Xi = _calc_xi(T,N,log_alphas, log_mask_zero(model.transmat_),log_betas, b)
-        
-        gamma = _calc_gamma(log_alphas, log_betas)
-        
+        Xi = _calc_xi(T,N,log_alphas, log_mask_zero(model.transmat_),log_betas, b, gamma)
+
         #2.2 Optimization step
         #Initialize for the optimization 
         
@@ -247,27 +290,27 @@ def EA_func(model, N, X, Z, cycles, bnds, ind,  tol=1e-5):
         #Minimize object function to get the optimized covariate coefficients 
         param = (T, Z, Xi,N, ind)
         options = {'maxiter':50}
-        print('Start of internal optimization')
+        #print('Start of internal optimization')
         res = optimize.minimize(object_fun,x0 = x0, bounds=bnds,options=options,args=param,method='SLSQP')
         res_x = res.x.reshape((N,N,ind+1))
         print('End of internal optimization')
         #Update the intital guess 
+        #print('Link Coefficients',res_x )
         x0 = res_x
         
         #Calculate the time dependent Transmittion probability with or without Covarate
-        trans_ = calc_trans(T,N, Xi, res_x, Z) #with Covariate
+        trans_ = calc_trans(T,N, Xi, x0, Z, gamma) #with Covariate
+        
         #trans_ = calc_trans_w(T,N ,gamma , Xi)
 
-        
-        
+
         #3 Do M step 
         #3.1 Update 
         model.link_coef = x0 
-        model.startprob_, model.transmat_ = m_step(trans_, gamma)
+        model.startprob_, model.transmat_ = m_step(np.exp(Xi), np.exp(gamma))
         
         
+        #print(np.array([[np.mean(model.transmat_[0,0,:]),np.mean(model.transmat_[0,1,:])],[np.mean(model.transmat_[1,0,:]),np.mean(model.transmat_[1,1,:])]]))
         #Calculate the new covariance and means 
-        model.means_means, model.covars_ = _calc_mean_cov(gamma, X, model.means_prior, model.means_weight, model.covars_prior, model.covars_weight)
-
-
-       
+        model.means_, model.covars_ = _calc_mean_cov(gamma, X, model.means_prior, model.means_weight, model.covars_prior, model.covars_weight)
+        print(np.mean(model.transmat_,axis=2))
