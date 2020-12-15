@@ -24,46 +24,6 @@ def load_boundaries(N,ind):
     return bnds         
 
 
-def _viterbi(n_samples, n_components, log_startprob, log_transmat, framelogprob):
-
-
-    covars = covars.reshape(n_components,1)
-    means = means.reshape(n_components,1)
-    #From hmmlearn import stats: to get a multivariaite density for state probabilities 
-    #Here only the diagonals of the covariance is used! You might want to use other forms
-    framelogprob = stats._log_multivariate_normal_density_diag(X, means, covars)
-    state_sequence = np.empty(n_samples, dtype=np.int32)
-    viterbi_lattice = np.zeros((n_samples, n_components))
-        
-    work_buffer = np.empty(n_components)
-    for i in range(n_components):
-        viterbi_lattice[0, i] = log_startprob[i] + framelogprob[0, i]
-
-        # Induction
-    for t in range(1, n_samples-1):
-        for i in range(n_components):
-            for j in range(n_components):
-                work_buffer[j] = (log_transmat[j, i, t] + viterbi_lattice[t - 1, j])
-
-            viterbi_lattice[t, i] = np.max(work_buffer) + framelogprob[t, i]
-
-        # Observation traceback
-    state_sequence[n_samples - 1] = where_from = np.argmax(viterbi_lattice[n_samples - 1])
-    logprob = viterbi_lattice[n_samples - 1, where_from]
-
-    for t in range(n_samples - 2, -1, -1):
-        for i in range(n_components):
-            work_buffer[i] = (viterbi_lattice[t, i] + log_transmat[i, where_from, t])
-
-        state_sequence[t] = where_from = np.argmax(work_buffer)
-
-    return np.asarray(state_sequence), logprob
-
-
-
-
-
-
 #Object funtion for the maximization of the transition ML 
 def object_fun(x,T,Z,Xi,N,ind):
     #print('call object func')
@@ -206,7 +166,7 @@ def _calc_mean_cov(posteriors, obs, means_prior, means_weight, covars_prior, cov
 # ERROR IN CACULATION HERE PRODUCES NANs
 def calc_trans_w(n_samples,n_components ,log_gamma , Xi):
     trans_ = np.full((n_components,n_components,n_samples-1), -np.inf, dtype= np.float64 )
-    for t in range(0,n_samples-1):
+    for t in range(0,1440):
         for i in range(0,n_components):
             for j in range(0,n_components):
                 trans_[i,j,t] = Xi[i,j,t]- log_gamma[t,i] 
@@ -291,17 +251,18 @@ def EA_func(model, N, X, Z, cycles, bnds, ind,  tol=1e-5):
         param = (T, Z, Xi,N, ind)
         options = {'maxiter':50}
         #print('Start of internal optimization')
-        res = optimize.minimize(object_fun,x0 = x0, bounds=bnds,options=options,args=param,method='SLSQP')
-        res_x = res.x.reshape((N,N,ind+1))
-        print('End of internal optimization')
+        #res = optimize.minimize(object_fun,x0 = x0, bounds=bnds,options=options,args=param,method='SLSQP')
+        #res_x = res.x.reshape((N,N,ind+1))
+        #print('End of internal optimization')
         #Update the intital guess 
         #print('Link Coefficients',res_x )
-        x0 = res_x
+        #x0 = res_x
         
         #Calculate the time dependent Transmittion probability with or without Covarate
-        trans_ = calc_trans(T,N, Xi, x0, Z, gamma) #with Covariate
+        #trans_ = calc_trans(T,N, Xi, x0, Z, gamma) #with Covariate
         
-        #trans_ = calc_trans_w(T,N ,gamma , Xi)
+        trans_ = calc_trans_w(T,N ,gamma , Xi)
+        
 
 
         #3 Do M step 
@@ -314,3 +275,4 @@ def EA_func(model, N, X, Z, cycles, bnds, ind,  tol=1e-5):
         #Calculate the new covariance and means 
         model.means_, model.covars_ = _calc_mean_cov(gamma, X, model.means_prior, model.means_weight, model.covars_prior, model.covars_weight)
         print(np.mean(model.transmat_,axis=2))
+    model.log_prob = hist

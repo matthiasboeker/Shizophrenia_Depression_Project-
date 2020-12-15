@@ -19,13 +19,17 @@ def save_res(prefix, base):
     cov = base.covars_.reshape((2,1))
     mean = base.means_.reshape((2,1))
     start_prob = base.startprob_.reshape((2,1))
+    log_prob = base.log_prob
     
     coef = np.hstack(base.link_coef)
     res = np.concatenate((cov,mean,start_prob, coef), axis = 1)
     name_t = "%s_Transition_matrix.csv" % prefix
     name_r = "%s_Results.csv" % prefix
+    name_l = "%s_log_prob.csv" % prefix
     np.savetxt(name_t, trans, delimiter=",")
     np.savetxt(name_r, res, delimiter=",", header= "covariance, means, start_prob, link_coef01, link_coef02, link_coef11, link_coef12", comments='' )
+    np.savetxt(name_l, log_prob, delimiter=",")
+
             
         
 
@@ -68,20 +72,22 @@ def natural_keys(text):
     return [ atoi(c) for c in re.split(r'(\d+)', text) ]
 
 def kpss_test(timeseries):
-    print ('Results of KPSS Test:')
+    #print ('Results of KPSS Test:')
     kpsstest = kpss(timeseries, regression='c', nlags="auto")
     kpss_output = pd.Series(kpsstest[0:3], index=['Test Statistic','p-value','Lags Used'])
     for key,value in kpsstest[3].items():
         kpss_output['Critical Value (%s)'%key] = value
-    print (kpss_output)
+    #print (kpss_output)
+    return kpss_output[1]
 
 def adf_test(timeseries):
-    print ('Results of Dickey-Fuller Test:')
+    #print ('Results of Dickey-Fuller Test:')
     dftest = adfuller(timeseries, autolag='AIC')
     dfoutput = pd.Series(dftest[0:4], index=['Test Statistic','p-value','#Lags Used','Number of Observations Used'])
     for key,value in dftest[4].items():
        dfoutput['Critical Value (%s)'%key] = value
-    print (dfoutput)
+    #print (dfoutput)
+    return dfoutput[1]
 
 
 def preprocess(days,shizophrenia_p,shizophrenia_c):    

@@ -9,5 +9,6 @@ Modelling the covariate
 import numpy as np
 
 def trig_cov(shizophrenia, max_len = None):
-    return [np.array(np.cos(((len(X[:max_len]))/60/24)*2*np.pi*np.arange(0,len(X[:max_len]))/len(X[:max_len]))+1) for X in shizophrenia]
+    return [np.array(np.cos(((len(X[:max_len]))/60/24)*2*np.pi*np.arange(0,len(X[:max_len]))/len(X[:max_len]))) 
+            + np.array(np.sin(((len(X[:max_len]))/60/24)*2*np.pi*np.arange(0,len(X[:max_len]))/len(X[:max_len]))) for X in shizophrenia]
     

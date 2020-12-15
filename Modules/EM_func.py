@@ -12,6 +12,7 @@ import numpy as np
 from Modules.func.support_functions import *
 from Modules.func.help_functions import *
 from Modules.func.BW_func import *
+from Modules.func.result_entities import *
 from Modules.Covariate_model import trig_cov
 from hmmlearn import hmm
 from hmmlearn import _hmmc
@@ -27,8 +28,8 @@ def main():
     
     #Set external parameters 
     N = 2
-    cycles = range(0,5) 
-    tol = 1e-5
+    cycles = range(0,200) 
+    tol = 1e-3
     ind = 1
     
     #The modelled Covariate 
@@ -39,21 +40,34 @@ def main():
     bnds = load_boundaries(N,ind)
     
     #init models 
-    #models_p = [hmm.GaussianHMM(n_components=N,  covariance_type="diag", random_state=0,n_iter=100) for l in range(0,len(shizophrenia_p))]
+    models_p = [hmm.GaussianHMM(n_components=N,  covariance_type="diag", random_state=0,n_iter=100) for l in range(0,len(shizophrenia_p))]
     models_c = [hmm.GaussianHMM(n_components=N,  covariance_type="diag", random_state=0,n_iter=100) for k in range(0,len(shizophrenia_c))]
     
     #Fit the models with EM
-    #for l  in range(1,len(shizophrenia_p)):
-    #    print('Fit Patient model: ', l)
-    #    models_p[l]._init(shizophrenia_p[l])
-    #    EA_func(models_p[l], N, shizophrenia_p[l], Z_p[l], cycles, bnds, ind, tol)        
-    #    save_res("cov_patient_%s" %l, models_p[l])
+    for l  in range(0,len(shizophrenia_p)):
+        print('Fit Patient model: ', l)
+        models_p[l]._init(shizophrenia_p[l])
+        #Ensure that resting state on place zero --> consistant transition matrix
+        maxi = np.max(models_p[l].means_)
+        mini = np.min(models_p[l].means_)
+        models_p[l].means_[1] = maxi
+        models_p[l].means_[0] = mini
+        EA_func(models_p[l], N, shizophrenia_p[l], Z_p[l], cycles, bnds, ind, tol)        
+        save_res("_patient_%s" %l, models_p[l])
     
+        
     for k in range(0, len(shizophrenia_c)):
         print('Fit Control model: ', k)
         models_c[k]._init(shizophrenia_c[k])
+        
+        #Ensure that resting state on place zero --> consistant transition matrix
+        maxi = np.max(models_c[k].means_)
+        mini = np.min(models_c[k].means_)
+        models_c[k].means_[1] = maxi
+        models_c[k].means_[0] = mini
+        
         EA_func(models_c[k], N, shizophrenia_c[k], Z_c[k], cycles, bnds, ind, tol) 
-        save_res("cov_control_%s" %k, models_c[k])
+        save_res("_control_%s" %k, models_c[k])
         
 
 if __name__ == "__main__":

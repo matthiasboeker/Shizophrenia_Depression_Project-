@@ -9,10 +9,10 @@ import os
 os.chdir('/Users/matthiasboeker/Desktop/Master_Thesis/Schizophrenia_Depression_Project/')
 import numpy as np 
 from Modules.func.support_functions import *
-from Modules.func.help_functions import *
+#from Modules.func.help_functions import *
 from hmmlearn import hmm
     
-def main():
+def load_in_HMM_models(th_models_p, th_models_c):
 
     shizophrenia_p, shizophrenia_c = load_data()
     #1.2 set external parameters 
@@ -21,22 +21,15 @@ def main():
     shizophrenia_p = [np.array(X).reshape(len(X), 1) for X in shizophrenia_p]
     shizophrenia_c = [np.array(X).reshape(len(X), 1) for X in shizophrenia_c]
     
-    th_models_p = []
-    th_models_c = []
+    models_p = [hmm.GaussianHMM(n_components=N,  covariance_type="diag", random_state=0,n_iter=100) for l in range(0,len(shizophrenia_p))]
+    models_c = [hmm.GaussianHMM(n_components=N,  covariance_type="diag", random_state=0,n_iter=100) for k in range(0,len(shizophrenia_c))]
     
-    model = hmm.GaussianHMM(n_components=N,  covariance_type="diag", random_state=0,n_iter=100)
 
     #Fit the models with EM
     for l  in range(0,len(shizophrenia_p)):
-        print('Fit Patient model: ', l)
-        th_models_p.append(model.fit(shizophrenia_p[l]))
+        #print('Fit Patient model: ', l)
+        th_models_p.append(models_p[l].fit(shizophrenia_p[l]))
     
     for k in range(0, len(shizophrenia_c)):
-        print('Fit Control model: ', k)
-        th_models_c.append(model.fit(shizophrenia_c[k]))
-
-
-
-        
-if __name__ == "__main__":
-    main()
+        #print('Fit Control model: ', k)
+        th_models_c.append(models_c[k].fit(shizophrenia_c[k]))

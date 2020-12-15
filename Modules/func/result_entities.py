@@ -15,7 +15,7 @@ from Modules.func.support_functions import *
 class result_en():
     
     def __init__(self, name, group, variant,samples = 1, components = 2, trans_mat = 0, start_prob = 0, 
-                 means = 0, cov=1.0, link1=1.0, link2=1.0 ):
+                 means = 0, cov=1.0, link1=1.0, link2=1.0 , log_prob = 0):
         self.name = name 
         self.group = group
         self.variant = variant 
