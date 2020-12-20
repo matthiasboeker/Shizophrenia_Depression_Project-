@@ -4,23 +4,27 @@
 Created on Thu May 28 15:15:06 2020
 
 @author: matthiasboeker
-supportive function  
+Several supportive functions applied throughout the script
+1. Function to save the results in csv
+2. Funtion to load in the data
+3. Preprocessing functions
+4. etc. 
 """
 import re
-import os 
+import os
 import pandas as pd
-import datetime as dt 
+import datetime as dt
 import numpy as np
-from statsmodels.tsa.stattools import kpss, adfuller 
+from statsmodels.tsa.stattools import kpss, adfuller
 
 def save_res(prefix, base):
-    os.chdir('/Users/matthiasboeker/Desktop/Master_Thesis/Schizophrenia_Depression_Project/Results') 
+    os.chdir('/Users/matthiasboeker/Desktop/Master_Thesis/Schizophrenia_Depression_Project/Results')
     trans = np.vstack(base.transmat_).T
     cov = base.covars_.reshape((2,1))
     mean = base.means_.reshape((2,1))
     start_prob = base.startprob_.reshape((2,1))
     log_prob = base.log_prob
-    
+
     coef = np.hstack(base.link_coef)
     res = np.concatenate((cov,mean,start_prob, coef), axis = 1)
     name_t = "%s_Transition_matrix.csv" % prefix
@@ -30,11 +34,11 @@ def save_res(prefix, base):
     np.savetxt(name_r, res, delimiter=",", header= "covariance, means, start_prob, link_coef01, link_coef02, link_coef11, link_coef12", comments='' )
     np.savetxt(name_l, log_prob, delimiter=",")
 
-            
-        
 
 
-def load_data():    
+
+
+def load_data():
 
     os.chdir('/Users/matthiasboeker/Desktop/Master_Thesis/Schizophrenia_Depression_Project/Data/psykose/patient')
     files = os.listdir()
@@ -43,7 +47,7 @@ def load_data():
     for i in range(0,len(files)):
         if files[i].endswith('.csv'):
             shizophrenia_p.append(pd.read_csv(files[i]))
-        
+
     os.chdir('/Users/matthiasboeker/Desktop/Master_Thesis/Schizophrenia_Depression_Project/Data/psykose/control')
     files = os.listdir()
     files.sort(key=natural_keys)
@@ -53,11 +57,11 @@ def load_data():
             shizophrenia_c.append(pd.read_csv(files[i]))
     #Import demographics on Schizophrenia patients
     os.chdir('/Users/matthiasboeker/Desktop/Master_Thesis/Schizophrenia_Depression_Project/Data/psykose')
-    #Import days 
+    #Import days
     days = pd.read_csv('days.csv')
     shizophrenia_p, shizophrenia_c = preprocess(days,shizophrenia_p, shizophrenia_c)
     return shizophrenia_p, shizophrenia_c
-   
+
 
 
 def atoi(text):
@@ -90,10 +94,10 @@ def adf_test(timeseries):
     return dfoutput[1]
 
 
-def preprocess(days,shizophrenia_p,shizophrenia_c):    
+def preprocess(days,shizophrenia_p,shizophrenia_c):
     #Calculate the length of the signal
     days['length'] = 24*60*days['days'].astype(int)
-    #Split the id to number and patient info to numeric 
+    #Split the id to number and patient info to numeric
     new = days['id'].str.split('_', n=1, expand=True)
     days['id'] = new[1].astype(int)
     days['type'] = new[0]
@@ -102,19 +106,19 @@ def preprocess(days,shizophrenia_p,shizophrenia_c):
     days_p= days_p.reset_index(drop=True)
     days_c = days[days['type']=='control'].sort_values(by=['id'])
     days_c= days_c.reset_index(drop=True)
-    
+
     ind = [0,1,2,3,4,5,6,30,31]
     for o in ind:
         shizophrenia_c[o] = shizophrenia_c[o][1*18*60:]
         shizophrenia_c[o] = shizophrenia_c[o].reset_index()
 
-            
+
     shizophrenia_c[26] = shizophrenia_c[26][50:].reset_index()
     shizophrenia_c[27] = shizophrenia_c[27][1*23*60:].reset_index()
     shizophrenia_c[28] = shizophrenia_c[28][1*23*60:].reset_index()
     shizophrenia_c[29] = shizophrenia_c[29][(1*21*60)-30:].reset_index()
-    
-    #Cut the Signals to the amount of days documented 
+
+    #Cut the Signals to the amount of days documented
     for k in range(0,len(shizophrenia_p)):
         shizophrenia_p[k] = shizophrenia_p[k]['activity'][:days_p['length'][k]]
     for l in range(0,len(shizophrenia_c)):
@@ -173,7 +177,7 @@ def get_intervals(data, intervals = 0):
                 bin_d.append(df)
         data_d = pd.concat(bin_d,axis=1, ignore_index= True)
         return data_d
-        
+
     if intervals == 2:
         bin_n = list()
         ac_start = data['timestamp'].iloc[0]
@@ -187,7 +191,7 @@ def get_intervals(data, intervals = 0):
             if ((g+2)%2)!=0:
                 df.index = pd.date_range(start=start_n, periods=len(df), freq='min')
                 bin_n.append(df)
-        data_n = pd.concat(bin_n,axis=1, ignore_index= True) 
+        data_n = pd.concat(bin_n,axis=1, ignore_index= True)
         return data_n
 
 def confusion_matrix(y,y_hat):
@@ -200,10 +204,10 @@ def confusion_matrix(y,y_hat):
     confusion_matrix[0,1] = np.sum(np.logical_and((y == 1), (y_hat==0))*1)
     #False negative
     confusion_matrix[1,0] = np.sum(np.logical_and((y == 0), (y_hat==1))*1)
-    return confusion_matrix    
+    return confusion_matrix
 
 def binary_classifier(confusion_matrix, score = 'a'):
-    
+
     if score == 'a':
         accuracy = (confusion_matrix[1,1]+confusion_matrix[0,0])/(np.sum(confusion_matrix))
         return(accuracy)
@@ -219,18 +223,15 @@ def binary_classifier(confusion_matrix, score = 'a'):
     if score == 'mcc':
          mcc = ((confusion_matrix[1,1]*confusion_matrix[0,0])-(confusion_matrix[0,1]*confusion_matrix[1,0]))/np.roots((confusion_matrix[0,0]+confusion_matrix[0,1])*(confusion_matrix[0,0]+confusion_matrix[1,0])*(confusion_matrix[1,1]+confusion_matrix[0,1])*(confusion_matrix[1,1]+ confusion_matrix[1,0]))
          return mcc
-    else: 
+    else:
         print('Choose score: a, r, fpr, fone, mmcc')
-        
-   
+
+
 def snippets(k):
     breaker = k.index[0]
     chunks = list()
     for l in range(0,len(k.index)-1):
         if k.index[l+1] > k.index[l]+1:
             chunks.append(k.loc[breaker:k.index[l]])
-            breaker = k.index[l+1] 
+            breaker = k.index[l+1]
     return(chunks)
-    
-            
-            

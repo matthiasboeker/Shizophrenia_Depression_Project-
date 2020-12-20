@@ -4,6 +4,9 @@
 Created on Tue Nov  3 17:29:52 2020
 
 @author: matthiasboeker
+1. Function for the viterbi algorithm
+2. Function to apply the viterbi 
+
 """
 import numpy as np
 import os
@@ -18,12 +21,12 @@ def viterbi(n_samples, n_components,X ,log_startprob, log_transmat, means, covar
 
     covars = covars.reshape(n_components,1)
     means = means.reshape(n_components,1)
-    #From hmmlearn import stats: to get a multivariaite density for state probabilities 
+    #From hmmlearn import stats: to get a multivariaite density for state probabilities
     #Here only the diagonals of the covariance is used! You might want to use other forms
     framelogprob = stats._log_multivariate_normal_density_diag(X, means, covars)
     state_sequence = np.empty(n_samples, dtype=np.int32)
     viterbi_lattice = np.zeros((n_samples, n_components))
-        
+
     work_buffer = np.empty(n_components)
     for i in range(n_components):
         viterbi_lattice[0, i] = log_startprob[i] + framelogprob[0, i]
@@ -51,11 +54,6 @@ def viterbi(n_samples, n_components,X ,log_startprob, log_transmat, means, covar
 
 
 def load_state_sequence(X, entity):
-    
+
     entity.state_seq,_ = viterbi(len(X), entity.components ,X ,np.log(entity.start_prob),
              np.log(entity.trans_mat), entity.means,  entity.cov)
-
-
-
-
-

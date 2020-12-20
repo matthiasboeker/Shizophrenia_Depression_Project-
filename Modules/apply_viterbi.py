@@ -4,11 +4,17 @@
 Created on Tue Nov  3 16:18:57 2020
 
 @author: matthiasboeker
-Apply the viterbi algo 
+Apply the viterbi algorithm to solve the decoding problem
+Script computes the state sequence for each time series
+Function: load_state_sequence
+Input: computed state sequence, result entity
+Applies the viterbi to each result entity and stores the state sequence in it.
+Out: None 
+
 """
 import numpy as np
 import os
-import pandas as pd 
+import pandas as pd
 import matplotlib.pyplot as plt
 
 os.chdir('/Users/matthiasboeker/Desktop/Master_Thesis/Schizophrenia_Depression_Project')
@@ -31,13 +37,11 @@ state_seq_c = [viterbi(len(shizophrenia_c[i]), 2 ,shizophrenia_c[i] ,np.log(cont
 
 load_state_sequence(shizophrenia_p[1],patients_res[1] )
 
-patients_res[1].state_seq
-
 
 
 
 
 def load_state_sequence(X, entity):
-    
+
     entitiy.state_seq = viterbi(len(X[i]), entity.components ,X ,np.log(entity.start_prob),
              np.log(entity.trans_mat), entity.means,  entity.cov)

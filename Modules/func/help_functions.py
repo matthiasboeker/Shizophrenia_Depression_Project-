@@ -4,14 +4,14 @@
 Created on Tue Oct  6 10:12:21 2020
 
 @author: matthiasboeker
-usefull functions
+Several usefull functions applied through the scripts
 """
 import re
 import pandas as pd
-import datetime as dt 
+import datetime as dt
 import numpy as np
-from scipy import special 
-import os 
+from scipy import special
+import os
 from Modules.func.support_functions import *
 
 def log_mask_zero(a):
@@ -86,6 +86,6 @@ def object_fun(x,T,Z,Xi,N, ind):
             for j in range(0,N):
                 temp[c] = np.exp(Xi[i,j,t])*((x[i,j,0]+np.dot(x[i,j,1],Z[t]))-special.logsumexp(x[i,:,0]+np.dot(x[i,:,1],Z[t])))
                 c=c+1
-                
+
     f=100000000/np.sum(temp)
     return f
